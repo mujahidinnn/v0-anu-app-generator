@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
@@ -40,15 +40,55 @@ const activities = [
   "mau anu tapi keburu ngantuk",
 ]
 
+const kevinActivities = [
+  "Kevin is now anu-ing your database in the background.",
+  "Kevin has started optimizing your queries... suspiciously.",
+  "Kevin found something interesting in row 42069.",
+  "Kevin is whispering to your database. It whispers back.",
+  "Kevin deployed something. He won't say what.",
+  "Kevin is debugging your dreams now.",
+  "Kevin added himself as a foreign key to all tables.",
+  "Kevin is running migrations. In parallel. Backwards.",
+]
+
 interface FeedItem {
   id: number
   name: string
   activity: string
   timestamp: string
+  isKevin?: boolean
 }
 
-export function AnuFeed() {
+export interface AnuFeedRef {
+  addKevinFeed: () => void
+}
+
+interface AnuFeedProps {
+  anuMode?: boolean
+}
+
+function anuify(text: string, isAnuMode: boolean): string {
+  return isAnuMode ? `${text}...anu` : text
+}
+
+export const AnuFeed = forwardRef<AnuFeedRef, AnuFeedProps>(function AnuFeed({ anuMode = false }, ref) {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([])
+
+  const addKevinFeed = useCallback(() => {
+    const kevinActivity = kevinActivities[Math.floor(Math.random() * kevinActivities.length)]
+    const newItem: FeedItem = {
+      id: Date.now(),
+      name: "Kevin (Developer)",
+      activity: kevinActivity,
+      timestamp: "Just now",
+      isKevin: true,
+    }
+    setFeedItems(prev => [newItem, ...prev.slice(0, 7)])
+  }, [])
+
+  useImperativeHandle(ref, () => ({
+    addKevinFeed,
+  }))
 
   // Generate initial feed
   useEffect(() => {
@@ -78,19 +118,28 @@ export function AnuFeed() {
   }, [])
 
   return (
-    <Card className="w-full max-w-4xl border-border/50 bg-card/60 backdrop-blur">
+    <Card className={cn(
+      "w-full max-w-4xl border-border/50 bg-card/60 backdrop-blur transition-all duration-300",
+      anuMode && "anu-border"
+    )}>
       <CardHeader className="border-b border-border/50">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold text-foreground">
-            Live Anu Feed
+            {anuify("Live Anu Feed", anuMode)}
           </CardTitle>
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              <span className={cn(
+                "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                anuMode ? "bg-accent" : "bg-primary"
+              )}></span>
+              <span className={cn(
+                "relative inline-flex rounded-full h-2 w-2",
+                anuMode ? "bg-accent" : "bg-primary"
+              )}></span>
             </span>
             <span className="text-xs text-muted-foreground uppercase tracking-wider">
-              Recording
+              {anuify("Recording", anuMode)}
             </span>
           </div>
         </div>
@@ -102,16 +151,23 @@ export function AnuFeed() {
               key={item.id}
               className={cn(
                 "px-6 py-4 transition-all duration-500",
-                index === 0 && "bg-primary/5 animate-pulse"
+                index === 0 && "bg-primary/5 animate-pulse",
+                item.isKevin && "bg-accent/10 border-l-4 border-accent"
               )}
             >
               <p className="text-sm text-foreground leading-relaxed">
-                <span className="font-semibold text-primary">{item.name}</span>
+                <span className={cn(
+                  "font-semibold",
+                  item.isKevin ? "text-accent" : "text-primary",
+                  anuMode && "anu-glow"
+                )}>{item.name}</span>
                 {" "}
-                <span className="text-muted-foreground">{item.activity}.</span>
+                <span className="text-muted-foreground">
+                  {item.isKevin ? item.activity : anuify(item.activity, anuMode)}.
+                </span>
               </p>
               <p className="text-xs text-muted-foreground/70 mt-1">
-                {item.timestamp}
+                {anuify(item.timestamp, anuMode)}
               </p>
             </div>
           ))}
@@ -119,7 +175,7 @@ export function AnuFeed() {
       </CardContent>
     </Card>
   )
-}
+})
 
 function getRandomTimestamp(): string {
   const options = [
