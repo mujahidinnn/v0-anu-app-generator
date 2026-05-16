@@ -24,17 +24,19 @@ const buttonLabels = [
 
 interface AnuButtonProps {
   onTriggerEffect: () => void
+  anuMode?: boolean
 }
 
-export function AnuButton({ onTriggerEffect }: AnuButtonProps) {
+export function AnuButton({ onTriggerEffect, anuMode = false }: AnuButtonProps) {
   const [label, setLabel] = useState("Pencet Anu")
   const [isGlitching, setIsGlitching] = useState(false)
   const [rotation, setRotation] = useState(0)
 
   const getRandomLabel = useCallback(() => {
     const randomIndex = Math.floor(Math.random() * buttonLabels.length)
-    return buttonLabels[randomIndex]
-  }, [])
+    const baseLabel = buttonLabels[randomIndex]
+    return anuMode ? `${baseLabel}...anu` : baseLabel
+  }, [anuMode])
 
   const handleHover = useCallback(() => {
     setLabel(getRandomLabel())
@@ -55,7 +57,10 @@ export function AnuButton({ onTriggerEffect }: AnuButtonProps) {
     <div className="relative">
       {/* Glow effect behind button */}
       <div 
-        className="absolute inset-0 blur-xl opacity-50 bg-primary rounded-full scale-110"
+        className={cn(
+          "absolute inset-0 blur-xl opacity-50 rounded-full scale-110 transition-colors duration-500",
+          anuMode ? "bg-accent" : "bg-primary"
+        )}
         style={{ transform: `rotate(${rotation}deg)` }}
       />
       
@@ -70,6 +75,7 @@ export function AnuButton({ onTriggerEffect }: AnuButtonProps) {
           "animate-pulse-neon rounded-xl",
           "hover:scale-105 active:scale-95",
           isGlitching && "animate-glitch",
+          anuMode && "bg-gradient-to-r from-primary to-accent hover:opacity-90"
         )}
         style={{ 
           transform: `rotate(${rotation}deg) translateX(${Math.sin(rotation) * 10}px)`,

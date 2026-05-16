@@ -6,6 +6,9 @@ import { AnuButton } from "@/components/anu-button"
 import { StatCards } from "@/components/stat-cards"
 import { AnuFeed } from "@/components/anu-feed"
 import { AbsurdChartDialog } from "@/components/absurd-chart-dialog"
+import { UnfairClicker } from "@/components/unfair-clicker"
+import { FortuneWidget } from "@/components/fortune-widget"
+import { AnuModeToggle } from "@/components/anu-mode-toggle"
 import { cn } from "@/lib/utils"
 
 const philosophicalQuotes = [
@@ -28,9 +31,15 @@ const fontClasses = [
   "font-mono",
 ]
 
+// Helper function to add "...anu" suffix to text when anu mode is on
+function anuify(text: string, isAnuMode: boolean): string {
+  return isAnuMode ? `${text}...anu` : text
+}
+
 export default function AnuPage() {
   const [showChart, setShowChart] = useState(false)
   const [fontClass, setFontClass] = useState("font-sans")
+  const [anuMode, setAnuMode] = useState(false)
 
   const triggerRandomEffect = useCallback(() => {
     const effect = Math.random()
@@ -38,58 +47,81 @@ export default function AnuPage() {
     if (effect < 0.4) {
       // Show philosophical toast
       const quote = philosophicalQuotes[Math.floor(Math.random() * philosophicalQuotes.length)]
-      toast(quote, {
-        description: "— Anonim, mungkin",
+      toast(anuMode ? `${quote}...anu` : quote, {
+        description: anuMode ? "— Anonim, mungkin...anu" : "— Anonim, mungkin",
         duration: 4000,
       })
     } else if (effect < 0.7) {
       // Change font
       const randomFont = fontClasses[Math.floor(Math.random() * fontClasses.length)]
       setFontClass(randomFont)
-      toast("Font berubah!", {
-        description: `Sekarang pake ${randomFont}. Kenapa? Gatau.`,
+      toast(anuMode ? "Font berubah!...anu" : "Font berubah!", {
+        description: anuMode 
+          ? `Sekarang pake ${randomFont}. Kenapa? Anu...anu` 
+          : `Sekarang pake ${randomFont}. Kenapa? Gatau.`,
         duration: 2000,
       })
     } else {
       // Show absurd chart
       setShowChart(true)
     }
-  }, [])
+  }, [anuMode])
 
   return (
     <main className={cn(
-      "min-h-screen bg-background text-foreground transition-all duration-500",
-      fontClass
+      "min-h-screen text-foreground transition-all duration-500",
+      fontClass,
+      anuMode ? "anu-mode-bg" : "bg-background"
     )}>
       {/* Subtle grid background */}
-      <div className="fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px] pointer-events-none" />
+      <div className={cn(
+        "fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px] pointer-events-none transition-opacity duration-500",
+        anuMode && "opacity-50"
+      )} />
       
       {/* Header */}
-      <header className="relative border-b border-border/50 bg-background/80 backdrop-blur-sm">
+      <header className={cn(
+        "relative border-b border-border/50 bg-background/80 backdrop-blur-sm transition-all duration-500",
+        anuMode && "bg-transparent backdrop-blur-md anu-border"
+      )}>
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <span className="text-3xl font-bold text-primary">Anu</span>
+                <span className={cn(
+                  "text-3xl font-bold text-primary transition-all duration-300",
+                  anuMode && "anu-glow"
+                )}>
+                  Anu
+                </span>
                 <span className="absolute -top-1 -right-4 text-xs text-muted-foreground rotate-12">
-                  v?.?.?
+                  {anuMode ? "v∞.?.?" : "v?.?.?"}
                 </span>
               </div>
-              <span className="text-xs text-muted-foreground hidden sm:inline-block border border-border/50 px-2 py-1 rounded">
-                Status: Anu
+              <span className={cn(
+                "text-xs text-muted-foreground hidden sm:inline-block border border-border/50 px-2 py-1 rounded transition-all duration-300",
+                anuMode && "border-primary/50 text-primary"
+              )}>
+                Status: {anuMode ? "ANU MAKSIMAL" : "Anu"}
               </span>
             </div>
             <nav className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground hidden md:block">
-                Mode: Chaotic Neutral
-              </span>
+              {/* Anu Mode Toggle */}
+              <AnuModeToggle enabled={anuMode} onToggle={setAnuMode} />
+              
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  <span className={cn(
+                    "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                    anuMode ? "bg-accent" : "bg-primary"
+                  )}></span>
+                  <span className={cn(
+                    "relative inline-flex rounded-full h-2 w-2",
+                    anuMode ? "bg-accent" : "bg-primary"
+                  )}></span>
                 </span>
                 <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Online
+                  {anuify("Online", anuMode)}
                 </span>
               </div>
             </nav>
@@ -103,73 +135,104 @@ export default function AnuPage() {
         {/* Hero Section with Button */}
         <section className="flex flex-col items-center justify-center py-16 md:py-24 space-y-8">
           <div className="text-center space-y-4 max-w-2xl">
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground">
-              Welcome to <span className="text-primary">Anu</span>
+            <h1 className={cn(
+              "text-4xl md:text-6xl font-bold tracking-tight text-foreground transition-all duration-300",
+              anuMode && "anu-glow"
+            )}>
+              {anuify("Welcome to", anuMode)} <span className="text-primary">Anu</span>
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              Aplikasi untuk melakukan sesuatu. Apa? Anu. Kenapa? Anu juga.
+              {anuify("Aplikasi untuk melakukan sesuatu. Apa? Anu. Kenapa? Anu juga", anuMode)}
               <span className="block mt-2 text-sm italic">
-                &quot;The app that does things, probably.&quot;
+                {anuify("\"The app that does things, probably.\"", anuMode)}
               </span>
             </p>
           </div>
           
           {/* The Anu Button - slightly offset */}
           <div className="pt-8 transform translate-x-4 md:translate-x-8">
-            <AnuButton onTriggerEffect={triggerRandomEffect} />
+            <AnuButton onTriggerEffect={triggerRandomEffect} anuMode={anuMode} />
           </div>
           
           <p className="text-xs text-muted-foreground/70 animate-pulse">
-            ↑ Pencet untuk pengalaman yang tidak bisa dijelaskan
+            {anuify("↑ Pencet untuk pengalaman yang tidak bisa dijelaskan", anuMode)}
           </p>
         </section>
 
         {/* Stats Section */}
         <section className="space-y-6">
           <div className="text-center">
-            <h2 className="text-2xl font-semibold text-foreground mb-2">
-              Statistik Anu
+            <h2 className={cn(
+              "text-2xl font-semibold text-foreground mb-2",
+              anuMode && "anu-glow"
+            )}>
+              {anuify("Statistik Anu", anuMode)}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Data real-time* yang sangat penting**
+              {anuify("Data real-time* yang sangat penting**", anuMode)}
             </p>
             <p className="text-xs text-muted-foreground/50 mt-1">
-              *mungkin **tidak
+              {anuify("*mungkin **tidak", anuMode)}
             </p>
           </div>
           <div className="flex justify-center">
-            <StatCards />
+            <StatCards anuMode={anuMode} />
+          </div>
+        </section>
+
+        {/* New Widgets Section - Game and Fortune */}
+        <section className="space-y-6">
+          <div className="text-center">
+            <h2 className={cn(
+              "text-2xl font-semibold text-foreground mb-2",
+              anuMode && "anu-glow"
+            )}>
+              {anuify("Aktivitas Anu Interaktif", anuMode)}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {anuify("Mainkan dan ramal masa depan Anda (atau jangan)", anuMode)}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <UnfairClicker anuMode={anuMode} />
+            <FortuneWidget anuMode={anuMode} />
           </div>
         </section>
 
         {/* Feed Section */}
         <section className="space-y-6">
           <div className="text-center">
-            <h2 className="text-2xl font-semibold text-foreground mb-2">
-              Aktivitas Anu Global
+            <h2 className={cn(
+              "text-2xl font-semibold text-foreground mb-2",
+              anuMode && "anu-glow"
+            )}>
+              {anuify("Aktivitas Anu Global", anuMode)}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Lihat apa yang sedang di-anu-kan orang lain
+              {anuify("Lihat apa yang sedang di-anu-kan orang lain", anuMode)}
             </p>
           </div>
           <div className="flex justify-center">
-            <AnuFeed />
+            <AnuFeed anuMode={anuMode} />
           </div>
         </section>
 
         {/* Footer Info */}
-        <footer className="text-center py-12 border-t border-border/30">
+        <footer className={cn(
+          "text-center py-12 border-t border-border/30 transition-all duration-300",
+          anuMode && "border-primary/30"
+        )}>
           <p className="text-sm text-muted-foreground">
-            Built with confusion and too much caffeine
+            {anuify("Built with confusion and too much caffeine", anuMode)}
           </p>
           <p className="text-xs text-muted-foreground/50 mt-2">
-            © 2026 Anu Corp. • All rights reserved (maybe) • Privacy: What privacy?
+            {anuify("© 2026 Anu Corp. • All rights reserved (maybe) • Privacy: What privacy?", anuMode)}
           </p>
         </footer>
       </div>
 
       {/* Absurd Chart Dialog */}
-      <AbsurdChartDialog open={showChart} onOpenChange={setShowChart} />
+      <AbsurdChartDialog open={showChart} onOpenChange={setShowChart} anuMode={anuMode} />
     </main>
   )
 }

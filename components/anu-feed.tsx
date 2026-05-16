@@ -47,7 +47,15 @@ interface FeedItem {
   timestamp: string
 }
 
-export function AnuFeed() {
+interface AnuFeedProps {
+  anuMode?: boolean
+}
+
+function anuify(text: string, isAnuMode: boolean): string {
+  return isAnuMode ? `${text}...anu` : text
+}
+
+export function AnuFeed({ anuMode = false }: AnuFeedProps) {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([])
 
   // Generate initial feed
@@ -78,19 +86,28 @@ export function AnuFeed() {
   }, [])
 
   return (
-    <Card className="w-full max-w-4xl border-border/50 bg-card/60 backdrop-blur">
+    <Card className={cn(
+      "w-full max-w-4xl border-border/50 bg-card/60 backdrop-blur transition-all duration-300",
+      anuMode && "anu-border"
+    )}>
       <CardHeader className="border-b border-border/50">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold text-foreground">
-            Live Anu Feed
+            {anuify("Live Anu Feed", anuMode)}
           </CardTitle>
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              <span className={cn(
+                "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                anuMode ? "bg-accent" : "bg-primary"
+              )}></span>
+              <span className={cn(
+                "relative inline-flex rounded-full h-2 w-2",
+                anuMode ? "bg-accent" : "bg-primary"
+              )}></span>
             </span>
             <span className="text-xs text-muted-foreground uppercase tracking-wider">
-              Recording
+              {anuify("Recording", anuMode)}
             </span>
           </div>
         </div>
@@ -106,12 +123,17 @@ export function AnuFeed() {
               )}
             >
               <p className="text-sm text-foreground leading-relaxed">
-                <span className="font-semibold text-primary">{item.name}</span>
+                <span className={cn(
+                  "font-semibold text-primary",
+                  anuMode && "anu-glow"
+                )}>{item.name}</span>
                 {" "}
-                <span className="text-muted-foreground">{item.activity}.</span>
+                <span className="text-muted-foreground">
+                  {anuify(item.activity, anuMode)}.
+                </span>
               </p>
               <p className="text-xs text-muted-foreground/70 mt-1">
-                {item.timestamp}
+                {anuify(item.timestamp, anuMode)}
               </p>
             </div>
           ))}
