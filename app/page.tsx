@@ -1,14 +1,19 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react"
 import { toast } from "sonner"
+import { Coins } from "lucide-react"
 import { AnuButton } from "@/components/anu-button"
 import { StatCards } from "@/components/stat-cards"
-import { AnuFeed } from "@/components/anu-feed"
+import { AnuFeed, AnuFeedRef } from "@/components/anu-feed"
 import { AbsurdChartDialog } from "@/components/absurd-chart-dialog"
 import { UnfairClicker } from "@/components/unfair-clicker"
 import { FortuneWidget } from "@/components/fortune-widget"
 import { AnuModeToggle } from "@/components/anu-mode-toggle"
+import { FakeDeleteButton } from "@/components/fake-delete-button"
+import { AnuShop } from "@/components/anu-shop"
+import { UselessPoll } from "@/components/useless-poll"
+import { CaptchaProvider, useCaptcha } from "@/components/captcha-provider"
 import { cn } from "@/lib/utils"
 
 const philosophicalQuotes = [
@@ -36,12 +41,43 @@ function anuify(text: string, isAnuMode: boolean): string {
   return isAnuMode ? `${text}...anu` : text
 }
 
-export default function AnuPage() {
+interface AnuPageContentProps {
+  anuMode: boolean
+  setAnuMode: (value: boolean) => void
+}
+
+function AnuPageContent({ anuMode, setAnuMode }: AnuPageContentProps) {
   const [showChart, setShowChart] = useState(false)
   const [fontClass, setFontClass] = useState("font-sans")
-  const [anuMode, setAnuMode] = useState(false)
+  const [anuCoins, setAnuCoins] = useState(0)
+  const feedRef = useRef<AnuFeedRef>(null)
+  const { triggerCaptcha } = useCaptcha()
+
+  const handleScoreChange = useCallback((newScore: number) => {
+    setAnuCoins(newScore)
+  }, [])
+
+  const handleSpendCoins = useCallback((amount: number) => {
+    setAnuCoins(prev => prev - amount)
+  }, [])
+
+  const handleAddKevinFeed = useCallback(() => {
+    feedRef.current?.addKevinFeed()
+  }, [])
+
+  // Wrapper to potentially trigger captcha on clicks
+  const withCaptcha = useCallback(<T extends unknown[]>(fn: (...args: T) => void) => {
+    return (...args: T) => {
+      if (!triggerCaptcha()) {
+        fn(...args)
+      }
+    }
+  }, [triggerCaptcha])
 
   const triggerRandomEffect = useCallback(() => {
+    // Check for captcha first
+    if (triggerCaptcha()) return
+
     const effect = Math.random()
     
     if (effect < 0.4) {
@@ -65,7 +101,7 @@ export default function AnuPage() {
       // Show absurd chart
       setShowChart(true)
     }
-  }, [anuMode])
+  }, [anuMode, triggerCaptcha])
 
   return (
     <main className={cn(
@@ -105,9 +141,30 @@ export default function AnuPage() {
                 Status: {anuMode ? "ANU MAKSIMAL" : "Anu"}
               </span>
             </div>
-            <nav className="flex items-center gap-4">
+            <nav className="flex items-center gap-2 sm:gap-4">
+              {/* $ANU Coins Display */}
+              <div className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10",
+                "transition-all duration-300",
+                anuMode && "anu-border"
+              )}>
+                <Coins className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-primary tabular-nums">
+                  ${Math.floor(anuCoins)}
+                </span>
+                <span className="text-xs text-muted-foreground hidden sm:inline">ANU</span>
+              </div>
+
+              {/* Anu Shop */}
+              <AnuShop 
+                coins={anuCoins} 
+                onSpendCoins={handleSpendCoins} 
+                onAddKevinFeed={handleAddKevinFeed}
+                anuMode={anuMode}
+              />
+
               {/* Anu Mode Toggle */}
-              <AnuModeToggle enabled={anuMode} onToggle={setAnuMode} />
+              <AnuModeToggle enabled={anuMode} onToggle={withCaptcha(setAnuMode)} />
               
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
@@ -120,7 +177,7 @@ export default function AnuPage() {
                     anuMode ? "bg-accent" : "bg-primary"
                   )}></span>
                 </span>
-                <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                <span className="text-xs text-muted-foreground uppercase tracking-wider hidden sm:inline">
                   {anuify("Online", anuMode)}
                 </span>
               </div>
@@ -180,7 +237,7 @@ export default function AnuPage() {
           </div>
         </section>
 
-        {/* New Widgets Section - Game and Fortune */}
+        {/* New Widgets Section - Game, Fortune, and Poll */}
         <section className="space-y-6">
           <div className="text-center">
             <h2 className={cn(
@@ -190,12 +247,17 @@ export default function AnuPage() {
               {anuify("Aktivitas Anu Interaktif", anuMode)}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {anuify("Mainkan dan ramal masa depan Anda (atau jangan)", anuMode)}
+              {anuify("Mainkan, ramal, dan vote (semua sama-sama tidak berguna)", anuMode)}
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            <UnfairClicker anuMode={anuMode} />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            <UnfairClicker 
+              anuMode={anuMode} 
+              score={anuCoins} 
+              onScoreChange={handleScoreChange} 
+            />
             <FortuneWidget anuMode={anuMode} />
+            <UselessPoll anuMode={anuMode} />
           </div>
         </section>
 
@@ -213,7 +275,7 @@ export default function AnuPage() {
             </p>
           </div>
           <div className="flex justify-center">
-            <AnuFeed anuMode={anuMode} />
+            <AnuFeed ref={feedRef} anuMode={anuMode} />
           </div>
         </section>
 
@@ -233,6 +295,19 @@ export default function AnuPage() {
 
       {/* Absurd Chart Dialog */}
       <AbsurdChartDialog open={showChart} onOpenChange={setShowChart} anuMode={anuMode} />
+
+      {/* Fake Delete Button */}
+      <FakeDeleteButton anuMode={anuMode} />
     </main>
+  )
+}
+
+export default function AnuPage() {
+  const [anuMode, setAnuMode] = useState(false)
+  
+  return (
+    <CaptchaProvider anuMode={anuMode}>
+      <AnuPageContent anuMode={anuMode} setAnuMode={setAnuMode} />
+    </CaptchaProvider>
   )
 }

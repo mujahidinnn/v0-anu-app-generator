@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
@@ -40,11 +40,27 @@ const activities = [
   "mau anu tapi keburu ngantuk",
 ]
 
+const kevinActivities = [
+  "Kevin is now anu-ing your database in the background.",
+  "Kevin has started optimizing your queries... suspiciously.",
+  "Kevin found something interesting in row 42069.",
+  "Kevin is whispering to your database. It whispers back.",
+  "Kevin deployed something. He won't say what.",
+  "Kevin is debugging your dreams now.",
+  "Kevin added himself as a foreign key to all tables.",
+  "Kevin is running migrations. In parallel. Backwards.",
+]
+
 interface FeedItem {
   id: number
   name: string
   activity: string
   timestamp: string
+  isKevin?: boolean
+}
+
+export interface AnuFeedRef {
+  addKevinFeed: () => void
 }
 
 interface AnuFeedProps {
@@ -55,8 +71,24 @@ function anuify(text: string, isAnuMode: boolean): string {
   return isAnuMode ? `${text}...anu` : text
 }
 
-export function AnuFeed({ anuMode = false }: AnuFeedProps) {
+export const AnuFeed = forwardRef<AnuFeedRef, AnuFeedProps>(function AnuFeed({ anuMode = false }, ref) {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([])
+
+  const addKevinFeed = useCallback(() => {
+    const kevinActivity = kevinActivities[Math.floor(Math.random() * kevinActivities.length)]
+    const newItem: FeedItem = {
+      id: Date.now(),
+      name: "Kevin (Developer)",
+      activity: kevinActivity,
+      timestamp: "Just now",
+      isKevin: true,
+    }
+    setFeedItems(prev => [newItem, ...prev.slice(0, 7)])
+  }, [])
+
+  useImperativeHandle(ref, () => ({
+    addKevinFeed,
+  }))
 
   // Generate initial feed
   useEffect(() => {
@@ -119,17 +151,19 @@ export function AnuFeed({ anuMode = false }: AnuFeedProps) {
               key={item.id}
               className={cn(
                 "px-6 py-4 transition-all duration-500",
-                index === 0 && "bg-primary/5 animate-pulse"
+                index === 0 && "bg-primary/5 animate-pulse",
+                item.isKevin && "bg-accent/10 border-l-4 border-accent"
               )}
             >
               <p className="text-sm text-foreground leading-relaxed">
                 <span className={cn(
-                  "font-semibold text-primary",
+                  "font-semibold",
+                  item.isKevin ? "text-accent" : "text-primary",
                   anuMode && "anu-glow"
                 )}>{item.name}</span>
                 {" "}
                 <span className="text-muted-foreground">
-                  {anuify(item.activity, anuMode)}.
+                  {item.isKevin ? item.activity : anuify(item.activity, anuMode)}.
                 </span>
               </p>
               <p className="text-xs text-muted-foreground/70 mt-1">
@@ -141,7 +175,7 @@ export function AnuFeed({ anuMode = false }: AnuFeedProps) {
       </CardContent>
     </Card>
   )
-}
+})
 
 function getRandomTimestamp(): string {
   const options = [

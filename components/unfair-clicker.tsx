@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils"
 
 interface UnfairClickerProps {
   anuMode: boolean
+  score: number
+  onScoreChange: (newScore: number) => void
 }
 
 const angryMessages = [
@@ -31,8 +33,7 @@ const angryMessages = [
   "Fine. RESET. See if I care. (I do care. A lot.)",
 ]
 
-export function UnfairClicker({ anuMode }: UnfairClickerProps) {
-  const [score, setScore] = useState(0)
+export function UnfairClicker({ anuMode, score, onScoreChange }: UnfairClickerProps) {
   const [buttonPosition, setButtonPosition] = useState({ x: 50, y: 50 })
   const [isShaking, setIsShaking] = useState(false)
   const [showAngryDialog, setShowAngryDialog] = useState(false)
@@ -59,10 +60,8 @@ export function UnfairClicker({ anuMode }: UnfairClickerProps) {
     
     const effect = randomEffects[Math.floor(Math.random() * randomEffects.length)]
     const change = effect()
-    setScore(prev => {
-      const newScore = prev + change
-      return Math.round(newScore * 1000) / 1000 // Keep 3 decimal places
-    })
+    const newScore = Math.round((score + change) * 1000) / 1000
+    onScoreChange(newScore)
 
     // 10% chance to teleport the button
     if (Math.random() < 0.1) {
@@ -70,7 +69,7 @@ export function UnfairClicker({ anuMode }: UnfairClickerProps) {
       const newY = Math.random() * 60 + 20 // 20-80%
       setButtonPosition({ x: newX, y: newY })
     }
-  }, [score])
+  }, [score, onScoreChange])
 
   const handleReset = useCallback(() => {
     // Show angry dialog instead of resetting
@@ -83,16 +82,20 @@ export function UnfairClicker({ anuMode }: UnfairClickerProps) {
 
   const actuallyReset = useCallback(() => {
     // After being scolded, reset but add random score
-    setScore(Math.floor(Math.random() * 10) - 5)
+    onScoreChange(Math.floor(Math.random() * 10) - 5)
     setButtonPosition({ x: 50, y: 50 })
     setClickCount(0)
     setShowAngryDialog(false)
-  }, [])
+  }, [onScoreChange])
 
   const formatScore = (s: number) => {
+    if (s === undefined || s === null) return "0"
     if (Number.isInteger(s)) return s.toString()
     return s.toFixed(3)
   }
+
+  // Ensure score has a default value
+  const displayScore = score ?? 0
 
   return (
     <>
@@ -117,9 +120,9 @@ export function UnfairClicker({ anuMode }: UnfairClickerProps) {
             </p>
             <p className={cn(
               "text-4xl font-bold tabular-nums transition-colors duration-300",
-              score > 0 ? "text-primary" : score < 0 ? "text-destructive" : "text-foreground"
+              displayScore > 0 ? "text-primary" : displayScore < 0 ? "text-destructive" : "text-foreground"
             )}>
-              {formatScore(score)}
+              {formatScore(displayScore)}
             </p>
             <p className="text-xs text-muted-foreground">
               Total clicks: {clickCount}{anuMode ? "...anu" : ""}
